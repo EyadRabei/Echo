@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echo Memory — Rhythm Recall With Shifting Notes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0E0F1A 0%, #1A1B2F 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: rgba(20, 21, 36, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: rgba(14, 15, 26, 0.9);
+            border-bottom: 2px solid #7C5CFF;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #7C5CFF;
+            text-shadow: 0 0 10px rgba(124, 92, 255, 0.5);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: #00D1B2;
+        }
+
+        .screen {
+            padding: 20px;
+            display: none;
+            flex-direction: column;
+            min-height: 500px;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .btn {
+            background: linear-gradient(to bottom, #7C5CFF, #5C4ACC);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            margin: 10px 0;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(to bottom, #00D1B2, #00A890);
+        }
+
+        .btn-danger {
+            background: linear-gradient(to bottom, #FF5C7C, #CC4A63);
+        }
+
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+        }
+
+        .pads-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .pad {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pad:active {
+            transform: scale(0.95);
+        }
+
+        .pad.active {
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
+            transform: scale(1.05);
+        }
+
+        .pad-0 {
+            background: linear-gradient(to bottom, #FF5C7C, #CC4A63);
+        }
+
+        .pad-1 {
+            background: linear-gradient(to bottom, #FFD35C, #CCA94A);
+        }
+
+        .pad-2 {
+            background: linear-gradient(to bottom, #5CFF9A, #4ACCA0);
+        }
+
+        .pad-3 {
+            background: linear-gradient(to bottom, #5CB6FF, #4A92CC);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .controls .btn {
+            width: auto;
+            padding: 12px 20px;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 15px;
+            background: rgba(14, 15, 26, 0.7);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .hud-item {
+            text-align: center;
+        }
+
+        .hud-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .score {
+            color: #00D1B2;
+        }
+
+        .streak {
+            color: #FFD35C;
+        }
+
+        .lives {
+            color: #FF5C7C;
+        }
+
+        .feedback {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            font-weight: bold;
+            opacity: 0;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .feedback.show {
+            opacity: 1;
+        }
+
+        .perfect {
+            color: #39FF88;
+        }
+
+        .good {
+            color: #FFD166;
+        }
+
+        .miss {
+            color: #FF4D4D;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #7C5CFF, #00D1B2);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .level-btn {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            background: rgba(124, 92, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .level-btn:hover {
+            background: rgba(124, 92, 255, 0.4);
+        }
+
+        .level-btn.unlocked {
+            background: linear-gradient(to bottom, #7C5CFF, #5C4ACC);
+        }
+
+        .level-btn.completed {
+            background: linear-gradient(to bottom, #00D1B2, #00A890);
+        }
+
+        .settings-group {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(14, 15, 26, 0.5);
+            border-radius: 12px;
+        }
+
+        .settings-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #7C5CFF;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+
+        .slider {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #7C5CFF;
+            cursor: pointer;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 10px 0;
+        }
+
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #7C5CFF;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+
+        .instructions {
+            background: rgba(14, 15, 26, 0.5);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .instructions ol {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .audio-status {
+            padding: 10px;
+            background: rgba(0, 209, 178, 0.2);
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 500px) {
+            .pad {
+                width: 100px;
+                height: 100px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1rem;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ECHO MEMORY</h1>
+            <h2>Rhythm Recall With Shifting Notes</h2>
+        </div>
+
+        <!-- Main Menu Screen -->
+        <div id="menu-screen" class="screen active">
+            <div class="game-area">
+                <div class="instructions">
+                    <p>Listen to the pattern, then repeat it. Some notes will shift each round!</p>
+                </div>
+                <div class="audio-status" id="audio-status">
+                    Audio: Loading...
+                </div>
+                <button class="btn" id="play-btn">
+                    <i class="fas fa-play"></i> PLAY GAME
+                </button>
+                <button class="btn btn-secondary" id="levels-btn">
+                    <i class="fas fa-bars"></i> LEVEL SELECT
+                </button>
+                <button class="btn" id="settings-btn">
+                    <i class="fas fa-cog"></i> SETTINGS
+                </button>
+                <button class="btn btn-danger" id="help-btn">
+                    <i class="fas fa-question-circle"></i> HOW TO PLAY
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="hud">
+                <div class="hud-item">
+                    <div>SCORE</div>
+                    <div class="hud-value score" id="score">0</div>
+                </div>
+                <div class="hud-item">
+                    <div>STREAK</div>
+                    <div class="hud-value streak" id="streak">x1</div>
+                </div>
+                <div class="hud-item">
+                    <div>LIVES</div>
+                    <div class="hud-value lives" id="lives">3</div>
+                </div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+
+            <div class="pads-container">
+                <div class="pad pad-0" data-note="0">C</div>
+                <div class="pad pad-1" data-note="1">D</div>
+                <div class="pad pad-2" data-note="2">E</div>
+                <div class="pad pad-3" data-note="3">G</div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" id="replay-btn">
+                    <i class="fas fa-redo"></i> REPLAY
+                </button>
+                <button class="btn btn-secondary" id="menu-btn">
+                    <i class="fas fa-home"></i> MENU
+                </button>
+            </div>
+
+            <div class="feedback perfect">PERFECT!</div>
+            <div class="feedback good">GOOD</div>
+            <div class="feedback miss">MISS</div>
+        </div>
+
+        <!-- Level Select Screen -->
+        <div id="levels-screen" class="screen">
+            <h2 style="text-align: center; margin-bottom: 20px;">SELECT LEVEL</h2>
+            <div class="level-grid" id="level-grid">
+                <!-- Levels will be generated here -->
+            </div>
+            <button class="btn" id="back-btn">
+                <i class="fas fa-arrow-left"></i> BACK
+            </button>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen">
+            <h2 style="text-align: center; margin-bottom: 20px;">SETTINGS</h2>
+            
+            <div class="settings-group">
+                <div class="settings-title">AUDIO</div>
+                
+                <div class="slider-container">
+                    <span>Music Volume</span>
+                    <input type="range" min="0" max="100" value="80" class="slider" id="music-volume">
+                </div>
+                
+                <div class="slider-container">
+                    <span>SFX Volume</span>
+                    <input type="range" min="0" max="100" value="90" class="slider" id="sfx-volume">
+                </div>
+                
+                <div class="toggle-container">
+                    <span>Metronome</span>
+                    <label class="toggle">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-group">
+                <div class="settings-title">GAMEPLAY</div>
+                
+                <div class="toggle-container">
+                    <span>Left-Hand Mode</span>
+                    <label class="toggle">
+                        <input type="checkbox">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="toggle-container">
+                    <span>Haptic Feedback</span>
+                    <label class="toggle">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <button class="btn" id="settings-back-btn">
+                <i class="fas fa-arrow-left"></i> BACK
+            </button>
+        </div>
+
+        <!-- Help Screen -->
+        <div id="help-screen" class="screen">
+            <h2 style="text-align: center; margin-bottom: 20px;">HOW TO PLAY</h2>
+            
+            <div class="instructions">
+                <ol>
+                    <li>Watch and listen to the pattern of notes played by the computer</li>
+                    <li>Repeat the pattern by tapping the pads in the same sequence</li>
+                    <li>Each round, 1-2 notes will shift (change pitch or timing slightly)</li>
+                    <li>Detect the changes and reproduce the new pattern accurately</li>
+                    <li>Earn points for accurate timing - Perfect (≤40ms) and Good (≤120ms)</li>
+                    <li>Maintain a streak to multiply your score</li>
+                    <li>Use Replay if you need to hear the pattern again (limited uses)</li>
+                </ol>
+                
+                <p><strong>Tip:</strong> Pay close attention to the changes between rounds!</p>
+            </div>
+            
+            <button class="btn" id="help-back-btn">
+                <i class="fas fa-arrow-left"></i> BACK
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Game state and configuration
+        const gameState = {
+            currentScreen: 'menu',
+            score: 0,
+            streak: 0,
+            lives: 3,
+            currentLevel: 1,
+            isPlaying: false,
+            isShowingPattern: false,
+            isInputPhase: false,
+            currentSequence: [],
+            userSequence: [],
+            replayCount: 3,
+            levels: [
+                { id: 1, name: "First Echo", unlocked: true, completed: false, stars: 0 },
+                { id: 2, name: "Gentle Steps", unlocked: false, completed: false, stars: 0 },
+                { id: 3, name: "Color Cues", unlocked: false, completed: false, stars: 0 },
+                { id: 4, name: "Soft Shift", unlocked: false, completed: false, stars: 0 },
+                { id: 5, name: "On the Beat", unlocked: false, completed: false, stars: 0 },
+                { id: 6, name: "Two to Tango", unlocked: false, completed: false, stars: 0 },
+                { id: 7, name: "Louder-Quieter", unlocked: false, completed: false, stars: 0 },
+                { id: 8, name: "Tiny Drifts", unlocked: false, completed: false, stars: 0 },
+                { id: 9, name: "Mix & Match", unlocked: false, completed: false, stars: 0 },
+                { id: 10, name: "World 1 Boss", unlocked: false, completed: false, stars: 0 }
+            ],
+            tolerance: {
+                perfect: 40,
+                good: 120
+            },
+            levelConfig: {
+                bpm: 90,
+                sequenceLength: 3,
+                targetLength: 5,
+                roundsToWin: 4,
+                shiftPerRound: 1,
+                shiftTypes: ['pitch']
+            }
+        };
+
+        // Audio context and settings
+        let audioContext;
+        let masterGain;
+        let sfxGain;
+        let isAudioInitialized = false;
+
+        // Note frequencies (C5, D5, E5, G5)
+        const noteFrequencies = [523.25, 587.33, 659.25, 783.99];
+
+        // DOM Elements
+        const screens = document.querySelectorAll('.screen');
+        const scoreElement = document.getElementById('score');
+        const streakElement = document.getElementById('streak');
+        const livesElement = document.getElementById('lives');
+        const progressBar = document.getElementById('progress-bar');
+        const pads = document.querySelectorAll('.pad');
+        const levelGrid = document.getElementById('level-grid');
+        const feedbackElements = document.querySelectorAll('.feedback');
+        const audioStatus = document.getElementById('audio-status');
+
+        // Initialize game
+        function init() {
+            // Set up event listeners
+            document.getElementById('play-btn').addEventListener('click', () => showScreen('game'));
+            document.getElementById('levels-btn').addEventListener('click', () => {
+                generateLevelGrid();
+                showScreen('levels');
+            });
+            document.getElementById('settings-btn').addEventListener('click', () => showScreen('settings'));
+            document.getElementById('help-btn').addEventListener('click', () => showScreen('help'));
+            document.getElementById('replay-btn').addEventListener('click', replayPattern);
+            document.getElementById('menu-btn').addEventListener('click', () => showScreen('menu'));
+            document.getElementById('back-btn').addEventListener('click', () => showScreen('menu'));
+            document.getElementById('settings-back-btn').addEventListener('click', () => showScreen('menu'));
+            document.getElementById('help-back-btn').addEventListener('click', () => showScreen('menu'));
+            
+            // Add pad click listeners
+            pads.forEach(pad => {
+                pad.addEventListener('click', () => {
+                    if (gameState.isInputPhase) {
+                        const noteIndex = parseInt(pad.getAttribute('data-note'));
+                        handlePadPress(noteIndex);
+                    }
+                });
+            });
+            
+            // Initialize audio
+            initAudio();
+            
+            // Load game state from localStorage if available
+            loadGameState();
+            
+            // Start the game if returning to game screen
+            if (gameState.isPlaying) {
+                startGame();
+            }
+        }
+
+        // Initialize Web Audio API
+        function initAudio() {
+            try {
+                // Create audio context
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create master gain node
+                masterGain = audioContext.createGain();
+                masterGain.gain.value = 0.8;
+                masterGain.connect(audioContext.destination);
+                
+                // Create SFX gain node
+                sfxGain = audioContext.createGain();
+                sfxGain.gain.value = 0.9;
+                sfxGain.connect(masterGain);
+                
+                isAudioInitialized = true;
+                audioStatus.textContent = "Audio: Ready";
+                audioStatus.style.background = "rgba(57, 255, 136, 0.2)";
+            } catch (e) {
+                console.error("Web Audio API is not supported in this browser", e);
+                audioStatus.textContent = "Audio: Not supported";
+                audioStatus.style.background = "rgba(255, 77, 77, 0.2)";
+            }
+        }
+
+        // Play a note
+        function playNote(noteIndex, duration = 0.3) {
+            if (!isAudioInitialized) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = noteFrequencies[noteIndex];
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(sfxGain);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        // Show specific screen
+        function showScreen(screenName) {
+            screens.forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            document.getElementById(`${screenName}-screen`).classList.add('active');
+            gameState.currentScreen = screenName;
+            
+            if (screenName === 'game') {
+                startGame();
+            }
+        }
+
+        // Generate level grid for level select
+        function generateLevelGrid() {
+            levelGrid.innerHTML = '';
+            
+            gameState.levels.forEach(level => {
+                const levelBtn = document.createElement('div');
+                levelBtn.className = 'level-btn';
+                
+                if (level.unlocked) {
+                    levelBtn.classList.add('unlocked');
+                }
+                
+                if (level.completed) {
+                    levelBtn.classList.add('completed');
+                }
+                
+                levelBtn.textContent = level.id;
+                levelBtn.addEventListener('click', () => {
+                    if (level.unlocked) {
+                        gameState.currentLevel = level.id;
+                        showScreen('game');
+                    }
+                });
+                
+                levelGrid.appendChild(levelBtn);
+            });
+        }
+
+        // Start the game
+        function startGame() {
+            resetGame();
+            generateSequence();
+            showPattern();
+        }
+
+        // Reset game state
+        function resetGame() {
+            gameState.score = 0;
+            gameState.streak = 0;
+            gameState.lives = 3;
+            gameState.currentSequence = [];
+            gameState.userSequence = [];
+            gameState.isPlaying = true;
+            gameState.replayCount = 3;
+            updateHUD();
+        }
+
+        // Generate a new sequence
+        function generateSequence() {
+            gameState.currentSequence = [];
+            for (let i = 0; i < gameState.levelConfig.sequenceLength; i++) {
+                const randomPad = Math.floor(Math.random() * pads.length);
+                gameState.currentSequence.push(randomPad);
+            }
+        }
+
+        // Show the pattern to the player
+        function showPattern() {
+            gameState.isShowingPattern = true;
+            gameState.isInputPhase = false;
+            
+            let delay = 0;
+            gameState.currentSequence.forEach((padIndex, i) => {
+                setTimeout(() => {
+                    activatePad(padIndex);
+                    playNote(padIndex);
+                }, delay);
+                delay += 60000 / gameState.levelConfig.bpm; // Convert BPM to ms
+            });
+            
+            setTimeout(() => {
+                gameState.isShowingPattern = false;
+                gameState.isInputPhase = true;
+            }, delay);
+        }
+
+        // Replay the pattern
+        function replayPattern() {
+            if (!gameState.isShowingPattern && gameState.replayCount > 0) {
+                gameState.replayCount--;
+                showPattern();
+            }
+        }
+
+        // Activate a pad (visual effect)
+        function activatePad(padIndex) {
+            pads[padIndex].classList.add('active');
+            
+            setTimeout(() => {
+                pads[padIndex].classList.remove('active');
+            }, 300);
+        }
+
+        // Handle pad press
+        function handlePadPress(padIndex) {
+            if (!gameState.isInputPhase) return;
+            
+            activatePad(padIndex);
+            playNote(padIndex);
+            gameState.userSequence.push(padIndex);
+            
+            // Check if this input matches the sequence
+            const currentStep = gameState.userSequence.length - 1;
+            if (gameState.userSequence[currentStep] === gameState.currentSequence[currentStep]) {
+                // Correct input - judge timing (simulated here)
+                const timing = Math.random() * 150; // Simulate timing between 0-150ms
+                judgeInput(timing);
+            } else {
+                // Incorrect input
+                showFeedback('miss');
+                handleMiss();
+            }
+            
+            // Check if sequence is complete
+            if (gameState.userSequence.length === gameState.currentSequence.length) {
+                finishRound();
+            }
+        }
+
+        // Judge the input timing
+        function judgeInput(timing) {
+            if (timing <= gameState.tolerance.perfect) {
+                // Perfect input
+                gameState.score += 100 * getStreakMultiplier();
+                gameState.streak++;
+                showFeedback('perfect');
+            } else if (timing <= gameState.tolerance.good) {
+                // Good input
+                gameState.score += 60 * getStreakMultiplier();
+                gameState.streak++;
+                showFeedback('good');
+            } else {
+                // Miss (too late)
+                showFeedback('miss');
+                handleMiss();
+            }
+            
+            updateHUD();
+        }
+
+        // Get streak multiplier
+        function getStreakMultiplier() {
+            if (gameState.streak >= 15) return 2;
+            if (gameState.streak >= 10) return 1.5;
+            if (gameState.streak >= 5) return 1.2;
+            return 1;
+        }
+
+        // Show feedback text
+        function showFeedback(type) {
+            feedbackElements.forEach(el => el.classList.remove('show'));
+            
+            const element = document.querySelector(`.${type}`);
+            element.classList.add('show');
+            
+            setTimeout(() => {
+                element.classList.remove('show');
+            }, 1000);
+        }
+
+        // Handle miss
+        function handleMiss() {
+            gameState.streak = 0;
+            gameState.lives--;
+            updateHUD();
+            
+            if (gameState.lives <= 0) {
+                gameOver();
+            }
+        }
+
+        // Finish the round
+        function finishRound() {
+            gameState.isInputPhase = false;
+            
+            // Check if level is complete
+            if (gameState.levelConfig.sequenceLength >= gameState.levelConfig.targetLength) {
+                levelComplete();
+                return;
+            }
+            
+            // Apply shifts to sequence for next round
+            applyShifts();
+            
+            // Increase sequence length occasionally
+            if (Math.random() > 0.7) {
+                gameState.levelConfig.sequenceLength++;
+            }
+            
+            // Generate next sequence and show after a delay
+            setTimeout(() => {
+                generateSequence();
+                showPattern();
+                gameState.userSequence = [];
+            }, 1500);
+        }
+
+        // Apply shifts to sequence
+        function applyShifts() {
+            // In a full implementation, this would modify pitch, timing, or velocity
+            // For this example, we'll just change one note randomly
+            const shiftIndex = Math.floor(Math.random() * gameState.currentSequence.length);
+            const newPadIndex = Math.floor(Math.random() * pads.length);
+            
+            gameState.currentSequence[shiftIndex] = newPadIndex;
+        }
+
+        // Level complete
+        function levelComplete() {
+            // Update level completion status
+            const currentLevelIndex = gameState.currentLevel - 1;
+            gameState.levels[currentLevelIndex].completed = true;
+            
+            // Unlock next level if applicable
+            if (currentLevelIndex + 1 < gameState.levels.length) {
+                gameState.levels[currentLevelIndex + 1].unlocked = true;
+            }
+            
+            // Calculate stars based on performance
+            const stars = calculateStars();
+            gameState.levels[currentLevelIndex].stars = stars;
+            
+            // Save game state
+            saveGameState();
+            
+            alert(`Level Complete! Score: ${gameState.score}\nStars: ${stars}`);
+            showScreen('menu');
+        }
+
+        // Calculate stars based on performance
+        function calculateStars() {
+            // This is a simplified calculation
+            if (gameState.score >= 2500) return 3;
+            if (gameState.score >= 1500) return 2;
+            return 1;
+        }
+
+        // Game over
+        function gameOver() {
+            alert(`Game Over! Final Score: ${gameState.score}`);
+            showScreen('menu');
+        }
+
+        // Update HUD elements
+        function updateHUD() {
+            scoreElement.textContent = gameState.score;
+            streakElement.textContent = `x${getStreakMultiplier()}`;
+            livesElement.textContent = gameState.lives;
+            
+            // Update progress bar
+            const progress = (gameState.levelConfig.sequenceLength - 3) / (gameState.levelConfig.targetLength - 3) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        // Save game state to localStorage
+        function saveGameState() {
+            localStorage.setItem('echoMemoryGame', JSON.stringify({
+                levels: gameState.levels,
+                score: gameState.score
+            }));
+        }
+
+        // Load game state from localStorage
+        function loadGameState() {
+            const savedGame = localStorage.getItem('echoMemoryGame');
+            if (savedGame) {
+                const gameData = JSON.parse(savedGame);
+                gameState.levels = gameData.levels;
+                gameState.score = gameData.score;
+            }
+        }
+
+        // Initialize the game when the window loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
